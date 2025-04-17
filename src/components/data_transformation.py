@@ -106,9 +106,9 @@ class DataTransformation:
         logging.info(hist_vol.shape)
 
         TRAIN_START_DATE = '2011-01-01'
-        TRAIN_END_DATE = '2021-12-31'
+        # TRAIN_END_DATE = '2021-12-31'
 
-        # TRAIN_END_DATE = '2012-12-01'
+        TRAIN_END_DATE = '2012-04-01'
 
         Val_START_DATE = '2022-01-01'
         VAL_END_DATE =  '2022-12-31'
@@ -123,12 +123,12 @@ class DataTransformation:
         val = self.data_split(df, Val_START_DATE, VAL_END_DATE)
         hist_vol_val=hist_vol[Val_START_DATE :VAL_END_DATE]
 
-        full_train = self.data_split(df, TRAIN_START_DATE, VAL_END_DATE)
-        hist_vol_full_train= hist_vol[TRAIN_START_DATE :VAL_END_DATE]
+        # full_train = self.data_split(df, TRAIN_START_DATE, VAL_END_DATE)
+        # hist_vol_full_train= hist_vol[TRAIN_START_DATE :VAL_END_DATE]
 
 
-        # full_train = data_split(df, TRAIN_START_DATE,TRAIN_END_DATE)
-        # hist_vol_full_train= hist_vol[TRAIN_START_DATE :TRAIN_END_DATE]
+        full_train = self.data_split(df, TRAIN_START_DATE,TRAIN_END_DATE)
+        hist_vol_full_train= hist_vol[TRAIN_START_DATE :TRAIN_END_DATE]
 
         trade = self.data_split(df, TRADE_START_DATE,TRADE_END_DATE)
         hist_vol_trade= hist_vol[TRADE_START_DATE  : TRADE_END_DATE]

@@ -6,7 +6,7 @@ import numpy as np
 import random
 from collections import deque
 from src.logger import logging
-from src.exception import customException
+from src.exception import CustomException
 import sys
 
 class Memory:
@@ -283,7 +283,7 @@ def Noise(action, action_space, kappa=10):
         return noisy_action
 
     except Exception as e:
-        raise customException(e, sys)
+        raise CustomException(e, sys)
 
     # Return the original action if an error occurs
     return action.detach().cpu().numpy()
