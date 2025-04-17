@@ -4,7 +4,19 @@ from src.exception import CustomException
 import sys
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GridSearchCV
+import pandas as pd
 
+#Calculate the Sharpe ratio
+#This is our objective for tuning
+def calculate_sharpe(df):
+#df['daily_return'] = df['account_value'].pct_change(1)
+    if df['daily_return'].std() !=0:
+        sharpe = (252**0.5)*df['daily_return'].mean()/ \
+            df['daily_return'].std()
+        return sharpe
+    else:
+        return 0
+        
 def save_object(file_path, obj):
     try:
         dir_path = os.path.dirname(file_path)

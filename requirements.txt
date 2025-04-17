@@ -11,4 +11,5 @@ shimmy
 stable_baselines3
 gym
 yfinance
+torch
 # -e .

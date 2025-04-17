@@ -5,8 +5,6 @@ import torch.optim as optim
 from src.components.agent_utils import Actor, Critic, CostNetwork, Memory, Noise
 from src.logger import logging
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 class DDPGagent:
     def __init__(self, env, params, max_memory_size=50000):
         """
@@ -17,6 +15,7 @@ class DDPGagent:
         - Lagrange multiplier for enforcing constraints
         """
 
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # logging.info(params)
         logging.info(" DDPG AGEnt Class- ++++++++++++++++++++++++++++++++++++++++++")
 
@@ -77,6 +76,8 @@ class DDPGagent:
 
 
     def get_action(self, state):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         state_tensor = torch.FloatTensor(state).to(device)
         action = self.actor.forward(state_tensor).detach().cpu()
 
@@ -134,6 +135,7 @@ class DDPGagent:
         # 1️⃣ Sample a batch from the Replay Buffer
         states, actions, rewards, next_states, dones = self.memory.sample(self.batch_size)
 
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # logging.info(" update states : ", type(states),  states.shape,  " action ", action.shape, type(action) )
 
@@ -282,4 +284,5 @@ class DDPGagent:
         state = next_obs
 
       return account_memory, actions_memory, sum(Reward)
+
 
