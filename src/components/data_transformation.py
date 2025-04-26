@@ -1,3 +1,4 @@
+from datetime import date
 from stockstats import StockDataFrame as Sdf
 import numpy as np
 import sys
@@ -111,8 +112,8 @@ class DataTransformation:
 
         Val_START_DATE = '2022-01-01'
         VAL_END_DATE =  '2022-12-31'
-        TRADE_START_DATE = '2023-01-01'
-        TRADE_END_DATE = '2025-02-28'
+        TRADE_START_DATE = '2025-01-01'
+        TRADE_END_DATE = date.today().strftime("%Y-%m-%d")
         # print(df[30:])
         # hist_vol = hist_vol.reset_index(drop=True)
 

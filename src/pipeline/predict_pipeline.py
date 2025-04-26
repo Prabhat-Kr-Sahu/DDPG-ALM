@@ -56,8 +56,8 @@ class PredictPipeline:
     def __init__(self):
         self.pipeline_config=PredictPipelineConfig()
      
-    def design_environment(self,train, trade, hist_vol_trade):
-        stock_dimension = len(train.tic.unique())
+    def design_environment(self, trade, hist_vol_trade):
+        stock_dimension = len(trade.tic.unique())
         state_space = stock_dimension
         
         env_kwargs_trade = {
@@ -108,13 +108,13 @@ class PredictPipeline:
             params = json.load(f)
         return params
     
-    def predict(self,train, trade, hist_vol_trade):
+    def predict(self,trade, hist_vol_trade):
         try:
             logging.info("Before Loading")
-            env_trade, e_trade_gym = self.design_environment(train, trade, hist_vol_trade)
+            env_trade, e_trade_gym = self.design_environment(trade, hist_vol_trade)
             best=self.load_params('artifacts/params.json')
             agent = DDPGagent(self.env_trade, best)
-            self.load_agent(agent , self.pipeline_config.agent_path )
+            self.load_agent(agent , self.pipeline_config.agent_path)
             logging.info("Agent Loaded")
             logging.info("After Loading")
             account_memory, actions_memory, rewardd = agent.trade(env_trade, e_trade_gym)
@@ -135,9 +135,9 @@ class PredictPipeline:
 if __name__=="__main__":
     obj=DataIngestion()
     data_path=obj.initiate_data_ingestion()
-    data_path='artifacts/data.csv'
+
     data_transformation=DataTransformation()
     full_train, hist_vol_full_train, train, hist_vol_train, val, hist_vol_val, trade, hist_vol_trade=data_transformation.initiate_data_transformation(data_path)
 
     obj=PredictPipeline()
-    obj.predict(train, trade, hist_vol_trade)
+    obj.predict(trade, hist_vol_trade)
