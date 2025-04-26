@@ -1,5 +1,4 @@
 from stockstats import StockDataFrame as Sdf
-import os 
 import numpy as np
 import sys
 import pandas as pd

@@ -285,4 +285,21 @@ class DDPGagent:
 
       return account_memory, actions_memory, sum(Reward)
 
-
+    def save(self, path):
+        """
+        Save the model's state_dict to a file.
+        """
+        torch.save({
+            'actor_state_dict': self.actor.state_dict(),
+            'critic_state_dict': self.critic.state_dict(),
+            'cost_network_state_dict': self.cost_network.state_dict(),
+            'actor_target_state_dict': self.actor_target.state_dict(),
+            'critic_target_state_dict': self.critic_target.state_dict(),
+            'cost_target_state_dict': self.cost_target.state_dict(),
+            'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
+            'critic_optimizer_state_dict': self.critic_optimizer.state_dict(),
+            'cost_optimizer_state_dict': self.cost_optimizer.state_dict(),
+            'lambda_': self.lambda_,
+            'rho': self.rho,
+            'violations' :self.violations
+        }, path)
