@@ -151,7 +151,7 @@ class StockPortfolioEnv(gym.Env):
           if df_daily_return['daily_return'].std() !=0:
             sharpe = (252**0.5)*df_daily_return['daily_return'].mean()/ \
                     df_daily_return['daily_return'].std()
-            logging.info("Sharpe: ",sharpe)
+            logging.info("Sharpe: {}".format(sharpe))
           logging.info("=================================")
 
 

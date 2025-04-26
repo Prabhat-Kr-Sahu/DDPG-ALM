@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 import matplotlib.pyplot as plt
 import os
 import sys
@@ -17,7 +18,7 @@ from src.utils import calculate_sharpe
 class ModelTrainerConfig:
     INDICATORS = ['macd', 'boll_ub', 'boll_lb', 'rsi_30', 'cci_30', 'dx_30', 'close_30_sma', 'close_60_sma']
     TURBULENCE_THRESHOLD= 0.0020
-    agent_file_path=os.path.join('artifacts','ddpg_agent.pkl')
+    agent_file_path=os.path.join('artifacts','ddpg_agent')
     space = {
         'Ahidden_dim': hp.quniform('Ahidden_dim', 2, 512, 1),
         'Anum_layers': hp.quniform('Anum_layers', 1, 8, 1),
@@ -94,18 +95,7 @@ class ModelTrainer:
             "turbulence_threshold": self.modelTrainerConfig.TURBULENCE_THRESHOLD
         }
 
-        env_kwargs_trade = {
-            "hmax": 100,
-            "initial_amount": 1000000,
-            "transaction_cost_pct": 0.001,
-            "state_space": state_space,
-            "stock_dim": stock_dimension,
-            "tech_indicator_list": self.modelTrainerConfig.INDICATORS,
-            "action_space": stock_dimension,
-            "reward_scaling": 1e-4,
-            "hist_vol":hist_vol_trade,
-            "turbulence_threshold": self.modelTrainerConfig.TURBULENCE_THRESHOLD
-        }
+        
         
         self.e_train_gym = StockPortfolioEnv(df = train, **env_kwargs_train)
         self.env_train, _ = self.e_train_gym.get_sb_env()
@@ -116,9 +106,7 @@ class ModelTrainer:
         self.e_train_full_gym = StockPortfolioEnv(df = full_train, **env_kwargs_full)
         self.env_full_train, _ = self.e_train_full_gym.get_sb_env()
 
-        e_trade_gym = StockPortfolioEnv(df = trade, **env_kwargs_trade)
-        env_trade, _ = e_trade_gym.get_sb_env()
-        print("done")
+        logging.info("design environment done")
     
 
     def objective(self,params):
@@ -149,6 +137,10 @@ class ModelTrainer:
         best['Cact_fn'] = ['relu', 'tanh', 'sigmoid'][best['Cact_fn']]
         return best
     
+    def save_params(self, params):
+        with open("artifacts/params.json", 'w') as f:
+            json.dump(params, f)
+            
     def initiate_model_trainer(self,train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train, trade, hist_vol_trade):
         logging.info("Model training initiated")
         logging.info("Finding the best hyperparameters")
@@ -161,7 +153,7 @@ class ModelTrainer:
 
         rewards = []
         avg_rewards = []
-        num_episodes = 5 #1000
+        num_episodes = 1 #1000
 
         torch.autograd.set_detect_anomaly(True)
         for episode in range(num_episodes):
@@ -172,8 +164,6 @@ class ModelTrainer:
             # print(state.shape, type(state))
             # state = state.reshape(1, 1, 39, 30)
             # print((torch.tensor( np.expand_dims(state, axis=1))).dim)
-
-
 
             print(f"Episode: {episode+1}")
             while not done:
@@ -219,10 +209,13 @@ class ModelTrainer:
             print(f"Episode: {episode+1}, Total Reward: {episode_reward}")
             print(" violations : " ,  agent.violations)
 
-            save_object(self.modelTrainerConfig.agent_file_path, agent)
+            # save_object(self.modelTrainerConfig.agent_file_path, agent)
+            agent.save(self.modelTrainerConfig.agent_file_path)
+            self.save_params(best)
+            # Plot the rewards and average rewards
+            self.plot_rewards(rewards, avg_rewards)
 
-
-    def plot_rewards(rewards, avg_rewards):
+    def plot_rewards(self,rewards, avg_rewards):
         """
         Plot the rewards and average rewards over episodes.
         """

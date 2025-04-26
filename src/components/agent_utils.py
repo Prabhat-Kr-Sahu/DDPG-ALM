@@ -283,10 +283,9 @@ def Noise(action, action_space, kappa=10):
         return noisy_action
 
     except Exception as e:
-        raise CustomException(e, sys)
-
     # Return the original action if an error occurs
-    return action.detach().cpu().numpy()
+        return action.detach().cpu().numpy()
+
 
 
 
