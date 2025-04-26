@@ -17,6 +17,8 @@ import os
 
 @dataclass
 class PredictPipelineConfig:
+    daily_return_path:str=os.path.join('artifacts','df_daily_return.csv')
+    actions_path:str=os.path.join('artifacts','df_actions.csv')
     INDICATORS = ['macd', 'boll_ub', 'boll_lb', 'rsi_30', 'cci_30', 'dx_30', 'close_30_sma', 'close_60_sma']
     TURBULENCE_THRESHOLD= 0.0020
     agent_path=os.path.join('artifacts','ddpg_agent')
@@ -121,10 +123,9 @@ class PredictPipeline:
             logging.info(f"violations : {violations}" ) 
             logging.info(f" reward :: {rewardd}" )
             logging.info(f"sharpe: {calculate_sharpe(account_memory[0])}")
-            os.makedirs(os.path.dirname("content"),exist_ok=True)
-            account_memory[0].to_csv('/content/df_daily_return.csv')
-            actions_memory[0].to_csv('/content/df_actions.csv')
-            rewardd[0].to_csv('/content/df_reward.csv')
+
+            account_memory[0].to_csv(self.pipeline_config.daily_return_path, index=False,header=True)
+            actions_memory[0].to_csv(self.pipeline_config.actions_path,index=False,header=True)
 
             return actions_memory[0]
         
