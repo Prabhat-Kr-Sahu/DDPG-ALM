@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import json
 import sys
+import matplotlib.pyplot as plt
+import datetime
 
 from hyperopt import fmin,hp,tpe,Trials
 import numpy as np
@@ -56,10 +58,22 @@ class PredictPipeline:
     def __init__(self):
         self.pipeline_config=PredictPipelineConfig()
      
-    def design_environment(self, trade, hist_vol_trade):
-        stock_dimension = len(trade.tic.unique())
+    def design_environment(self,full_train,hist_vol_full_train, trade, hist_vol_trade):
+        stock_dimension = len(full_train.tic.unique())
         state_space = stock_dimension
-        
+        env_kwargs_full = {
+            "hmax": 100,
+            "initial_amount": 1000000,
+            "transaction_cost_pct": 0.001,
+            "state_space": state_space,
+            "stock_dim": stock_dimension,
+            "tech_indicator_list": self.pipeline_config.INDICATORS,
+            "action_space": stock_dimension,
+            "reward_scaling": 1e-4,
+            "hist_vol":hist_vol_full_train,
+            "turbulence_threshold": self.pipeline_config.TURBULENCE_THRESHOLD
+        }
+
         env_kwargs_trade = {
             "hmax": 100,
             "initial_amount": 1000000,
@@ -71,12 +85,16 @@ class PredictPipeline:
             "reward_scaling": 1e-4,
             "hist_vol":hist_vol_trade,
             "turbulence_threshold": self.pipeline_config.TURBULENCE_THRESHOLD
-        }       
-        self.e_trade_gym = StockPortfolioEnv(df = trade, **env_kwargs_trade)
-        self.env_trade, _ = self.e_trade_gym.get_sb_env()
+        }      
+        
+        e_train_full_gym = StockPortfolioEnv(df = full_train, **env_kwargs_full)
+        env_full_train, _ = e_train_full_gym.get_sb_env()
+ 
+        e_trade_gym = StockPortfolioEnv(df = trade, **env_kwargs_trade)
+        env_trade, _ = e_trade_gym.get_sb_env()
 
         logging.info("Environment design complete")
-        return self.env_trade, self.e_trade_gym
+        return env_full_train, env_trade, e_trade_gym
     
     def load_agent(self,agent, checkpoint_path, device=None):
         """
@@ -108,15 +126,18 @@ class PredictPipeline:
             params = json.load(f)
         return params
     
-    def predict(self,trade, hist_vol_trade):
+    def predict(self,full_train,hist_vol_full_train, trade, hist_vol_trade):
         try:
             logging.info("Before Loading")
-            env_trade, e_trade_gym = self.design_environment(trade, hist_vol_trade)
+
+            env_full_train,env_trade,e_trade_gym = self.design_environment(full_train, hist_vol_full_train,trade,hist_vol_trade)
             best=self.load_params('artifacts/params.json')
-            agent = DDPGagent(self.env_trade, best)
+
+            agent = DDPGagent(env_full_train, best)
             self.load_agent(agent , self.pipeline_config.agent_path)
             logging.info("Agent Loaded")
-            logging.info("After Loading")
+
+            logging.info("Trading started")
             account_memory, actions_memory, rewardd = agent.trade(env_trade, e_trade_gym)
             violations= agent.violations
 
@@ -126,18 +147,21 @@ class PredictPipeline:
 
             account_memory[0].to_csv(self.pipeline_config.daily_return_path, index=False,header=True)
             actions_memory[0].to_csv(self.pipeline_config.actions_path,index=False,header=True)
-
-            return actions_memory[0]
+            
+    
+            return account_memory[0].iloc[-1]['daily_return'], actions_memory[0].iloc[-1].to_dict()
         
         except Exception as e:
             raise CustomException(e,sys)
 
-if __name__=="__main__":
+def run_pipeline():
     obj=DataIngestion()
-    data_path=obj.initiate_data_ingestion()
+    data_path=obj.initiate_data_ingestion('2011-01-01')
 
     data_transformation=DataTransformation()
-    full_train, hist_vol_full_train, train, hist_vol_train, val, hist_vol_val, trade, hist_vol_trade=data_transformation.initiate_data_transformation(data_path)
+    data_transformation.initiate_data_transformation(data_path)
+    full_train,hist_vol_full_train,_,_,_,_ = data_transformation.get_train_val_data()
+    trade,hist_vol_trade=data_transformation.get_trade_data('2025-01-01') #start date for prediction
 
     obj=PredictPipeline()
-    obj.predict(trade, hist_vol_trade)
+    return obj.predict(full_train,hist_vol_full_train,trade, hist_vol_trade)

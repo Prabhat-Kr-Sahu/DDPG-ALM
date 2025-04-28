@@ -86,57 +86,41 @@ class DataTransformation:
     def initiate_data_transformation(self,data_path):
         logging.info("Data transformation initiated")
         logging.info("Reading the data")
-        df=pd.read_csv(data_path)
+        self.df=pd.read_csv(data_path)
         
-        df = self.add_tech(df, self.transformation_config.INDICATORS)
-        df = df.ffill().bfill()
+        self.df = self.add_tech(self.df, self.transformation_config.INDICATORS)
+        self.df = self.df.ffill().bfill()
 
-        df = self.add_cov_matrix(df)
+        self.df = self.add_cov_matrix(self.df)
         logging.info("Covariance matrix added")
-        logging.info(df.shape)
+        logging.info(self.df.shape)
 
-        hist_vol=[]
-        for i in range(len(df['return_list'])):
-            returns = df['return_list'].values[i].std()
-            hist_vol.append(returns)
-        hist_vol= np.array(hist_vol)
-        # print(hist_vol.shape)
-        # print(hist_vol)
-        hist_vol= pd.DataFrame(hist_vol, df['date'])
-        logging.info(hist_vol.shape)
+        self.hist_vol=[]
+        for i in range(len(self.df['return_list'])):
+            returns = self.df['return_list'].values[i].std()
+            self.hist_vol.append(returns)
+        self.hist_vol= np.array(self.hist_vol)
+        self.hist_vol= pd.DataFrame(self.hist_vol, self.df['date'])
+        logging.info(self.hist_vol.shape)
 
-        TRAIN_START_DATE = '2011-01-01'
-        # TRAIN_END_DATE = '2021-12-31'
+    def get_train_val_data(self,TRAIN_START_DATE = '2011-01-01',TRAIN_END_DATE = '2012-04-01',VAL_START_DATE = '2012-04-01', VAL_END_DATE = '2013-01-01'):
+        train = self.data_split(self.df, TRAIN_START_DATE,TRAIN_END_DATE)
+        hist_vol_train = self.hist_vol[TRAIN_START_DATE : TRAIN_END_DATE]
 
-        TRAIN_END_DATE = '2012-04-01'
+        val = self.data_split(self.df, VAL_START_DATE, VAL_END_DATE)
+        hist_vol_val=self.hist_vol[VAL_START_DATE :VAL_END_DATE]
 
-        Val_START_DATE = '2022-01-01'
-        VAL_END_DATE =  '2022-12-31'
-        TRADE_START_DATE = '2025-01-01'
-        TRADE_END_DATE = date.today().strftime("%Y-%m-%d")
-        # print(df[30:])
-        # hist_vol = hist_vol.reset_index(drop=True)
-
-        train = self.data_split(df, TRAIN_START_DATE,TRAIN_END_DATE)
-        hist_vol_train = hist_vol[TRAIN_START_DATE : TRAIN_END_DATE]
-
-        val = self.data_split(df, Val_START_DATE, VAL_END_DATE)
-        hist_vol_val=hist_vol[Val_START_DATE :VAL_END_DATE]
-
-        # full_train = self.data_split(df, TRAIN_START_DATE, VAL_END_DATE)
-        # hist_vol_full_train= hist_vol[TRAIN_START_DATE :VAL_END_DATE]
-
-
-        full_train = self.data_split(df, TRAIN_START_DATE,TRAIN_END_DATE)
-        hist_vol_full_train= hist_vol[TRAIN_START_DATE :TRAIN_END_DATE]
-
-        trade = self.data_split(df, TRADE_START_DATE,TRADE_END_DATE)
-        hist_vol_trade= hist_vol[TRADE_START_DATE  : TRADE_END_DATE]
+        full_train = self.data_split(self.df, TRAIN_START_DATE,VAL_END_DATE)
+        hist_vol_full_train= self.hist_vol[TRAIN_START_DATE :VAL_END_DATE]
 
         logging.info(full_train.shape)
 
-        # full_train.to_csv(self.transformation_config.train_data_path, index=False, header=True)
-        # trade.to_csv(self.transformation_config.test_data_path, index=False, header=True)
         return (
-            full_train, hist_vol_full_train, train, hist_vol_train, val, hist_vol_val, trade, hist_vol_trade
+            full_train, hist_vol_full_train, train, hist_vol_train, val, hist_vol_val
         )
+    
+    def get_trade_data(self,TRADE_START_DATE = '2025-01-01',TRADE_END_DATE = date.today().strftime("%Y-%m-%d")):
+        trade = self.data_split(self.df, TRADE_START_DATE,TRADE_END_DATE)
+        hist_vol_trade= self.hist_vol[TRADE_START_DATE  : TRADE_END_DATE]
+        logging.info(trade.shape)
+        return trade, hist_vol_trade

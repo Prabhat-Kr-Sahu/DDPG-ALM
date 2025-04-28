@@ -52,7 +52,7 @@ class ModelTrainer:
     def __init__(self):
         self.modelTrainerConfig=ModelTrainerConfig()
 
-    def design_environment(self,train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train, trade, hist_vol_trade):
+    def design_environment(self,train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train):
         stock_dimension = len(train.tic.unique())
         state_space = stock_dimension
         env_kwargs_train = {
@@ -141,10 +141,10 @@ class ModelTrainer:
         with open("artifacts/params.json", 'w') as f:
             json.dump(params, f)
             
-    def initiate_model_trainer(self,train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train, trade, hist_vol_trade):
+    def initiate_model_trainer(self,train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train):
         logging.info("Model training initiated")
         logging.info("Finding the best hyperparameters")
-        self.design_environment(train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train, trade, hist_vol_trade)
+        self.design_environment(train, hist_vol_train, val, hist_vol_val, full_train, hist_vol_full_train)
         best = self.find_best_hyperparameters()
         logging.info(f"Best hyperparameters: {best}")
         agent = DDPGagent(self.env_full_train, best)
