@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portfolio Actions</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <style>
+        table {
+            width: 50%;
+            margin: auto;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #capitalChart {
+            max-width: 800px;
+            margin: 30px auto;
+        }
+    </style>
+</head>
+<body>
+
+<h2 style="text-align: center;">Today's Portfolio Actions</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Asset</th>
+            <th>Action Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for asset, action in actions.items() %}
+        <tr>
+            <td>{{ asset }}</td>
+            <td>{{ "%.2f"|format(action) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 style="text-align: center;">Total Return: {{ "%.2f"|format(returns) }}%</h3>
+
+<div style="text-align: center; margin-top: 20px;">
+  <a href="/capital">
+      <button style="padding: 10px 20px; font-size: 18px; background-color: #4CAF50; color: white; border: none; border-radius: 8px;">
+          View Capital Growth
+      </button>
+  </a>
+</div>

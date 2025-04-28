@@ -12,4 +12,8 @@ stable_baselines3
 gym
 yfinance
 torch
+fastapi
+uvicorn
+jinja2
+
 # -e .

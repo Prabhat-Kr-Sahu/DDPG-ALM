@@ -4,6 +4,7 @@ from src.exception import CustomException
 from src.logger import logging
 from dataclasses import dataclass
 from src.components.yahoo_downloader import YahooDownloader,Tickers
+from datetime import date
 
 @dataclass
 class DataIngestionConfig:
@@ -15,7 +16,7 @@ class DataIngestion:
     def __init__(self):
         self.ingestion_config=DataIngestionConfig()
     
-    def initiate_data_ingestion(self,start_date='2011-01-01', end_date='2025-04-26'):
+    def initiate_data_ingestion(self,start_date='2011-01-01', end_date=date.today().strftime("%Y-%m-%d")):
         logging.info("Entered the data initiation method")
         try:
             # Download and save the data in a pandas DataFrame:
