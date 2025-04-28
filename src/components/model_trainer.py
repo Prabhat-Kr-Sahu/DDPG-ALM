@@ -94,8 +94,6 @@ class ModelTrainer:
             "hist_vol":hist_vol_full_train,
             "turbulence_threshold": self.modelTrainerConfig.TURBULENCE_THRESHOLD
         }
-
-        
         
         self.e_train_gym = StockPortfolioEnv(df = train, **env_kwargs_train)
         self.env_train, _ = self.e_train_gym.get_sb_env()
@@ -212,28 +210,4 @@ class ModelTrainer:
             # save_object(self.modelTrainerConfig.agent_file_path, agent)
             agent.save(self.modelTrainerConfig.agent_file_path)
             self.save_params(best)
-            # Plot the rewards and average rewards
-            self.plot_rewards(rewards, avg_rewards)
-
-    def plot_rewards(self,rewards, avg_rewards):
-        """
-        Plot the rewards and average rewards over episodes.
-        """
-        # Create a figure and axis
-        fig, ax = plt.subplots()
-
-        # Plot the rewards
-        ax.plot(rewards, label='Rewards')
-        ax.plot(avg_rewards, label='Average Rewards')
-
-        # Label the axes
-        ax.set_xlabel('Episode')
-        ax.set_ylabel('Reward')
-
-        # Add legend
-        ax.legend()
-
-        # Show the plot
-        plt.show()
-        fig.savefig('rewards_plot.png')
 
