@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from src.pipeline.predict_pipeline import run_pipeline
+from src.pipeline.train_pipeline import run_pipeline as train_pipeline
 import os
 import os
 import pandas as pd
@@ -24,6 +25,11 @@ from fastapi.staticfiles import StaticFiles
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
 @app.get("/reset")
 def reset_capital():
     global capital_history
@@ -32,25 +38,31 @@ def reset_capital():
     capital_df.to_csv(CAPITAL_FILE, index=False)
     return {"message": "Capital reset to 100000"}
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    # Run your model pipeline and generate the plot
-    returns, actions = run_pipeline()
-        # Update capital based on today's return
-    daily_return = returns / 100  # assuming returns is in %
+# ➡️ Route to train the model
+@app.get("/train", response_class=HTMLResponse)
+def train_pipeline_route(request: Request):
+    # 👇 Call your actual train_pipeline function here
+    train_pipeline()
+
+    return templates.TemplateResponse("train_done.html", {"request": request})
+
+# ➡️ Route to predict and show actions
+@app.get("/predict", response_class=HTMLResponse)
+def predict_pipeline_route(request: Request):
+    returns, actions_dict = run_pipeline()
+
+    daily_return = returns / 100
     new_capital = capital_history[-1] * (1 + daily_return)
     capital_history.append(new_capital)
 
-    # Save updated capital history to file
+    # Save to file
     capital_df = pd.DataFrame({"capital": capital_history})
     capital_df.to_csv(CAPITAL_FILE, index=False)
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "actions": actions,
-        "returns": returns,
-        "capital_history": capital_history
-    })
+    return templates.TemplateResponse(
+        "predict_done.html",
+        {"request": request, "actions": actions_dict, "returns": returns}
+    )
 
 # ➡️ New route for capital page
 @app.get("/capital", response_class=HTMLResponse)

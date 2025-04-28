@@ -1,57 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Portfolio Actions</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <title>Portfolio Management</title>
     <style>
-        table {
-            width: 50%;
-            margin: auto;
-            border-collapse: collapse;
-            font-size: 18px;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px 12px;
+        body {
+            font-family: Arial, sans-serif;
             text-align: center;
+            padding-top: 50px;
         }
-        th {
+        .button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
             background-color: #4CAF50;
             color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
         }
-        #capitalChart {
-            max-width: 800px;
-            margin: 30px auto;
+        .button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
 
-<h2 style="text-align: center;">Today's Portfolio Actions</h2>
+    <h1>Welcome to Portfolio Management App</h1>
 
-<table>
-    <thead>
-        <tr>
-            <th>Asset</th>
-            <th>Action Value</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for asset, action in actions.items() %}
-        <tr>
-            <td>{{ asset }}</td>
-            <td>{{ "%.2f"|format(action) }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <div>
+        <a href="/train" class="button">Train Pipeline</a>
+        <a href="/predict" class="button">Predict Pipeline</a>
+    </div>
 
-<h3 style="text-align: center;">Total Return: {{ "%.2f"|format(returns) }}%</h3>
+    <div style="margin-top: 40px;">
+        <a href="/capital" class="button" style="background-color: #2196F3;">View Capital Growth</a>
+    </div>
 
-<div style="text-align: center; margin-top: 20px;">
-  <a href="/capital">
-      <button style="padding: 10px 20px; font-size: 18px; background-color: #4CAF50; color: white; border: none; border-radius: 8px;">
-          View Capital Growth
-      </button>
-  </a>
-</div>
+</body>
+</html>
