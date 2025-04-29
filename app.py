@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 from src.pipeline.predict_pipeline import run_pipeline
@@ -30,13 +30,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/reset")
-def reset_capital():
+@app.get("/reset-capital", response_class=HTMLResponse)
+def reset_capital_form(request: Request):
+    return templates.TemplateResponse("reset_capital.html", {"request": request})
+
+@app.post("/reset-capital", response_class=HTMLResponse)
+def reset_capital_submit(request: Request, initial_capital: float = Form(...)):
+    # Overwrite capital history
     global capital_history
-    capital_history = [100000]
+    capital_history = [initial_capital]
     capital_df = pd.DataFrame({"capital": capital_history})
     capital_df.to_csv(CAPITAL_FILE, index=False)
-    return {"message": "Capital reset to 100000"}
+    # Redirect to home
+    return RedirectResponse(url="/", status_code=303)
 
 # ➡️ Route to train the model
 @app.get("/train", response_class=HTMLResponse)
