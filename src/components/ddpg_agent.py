@@ -124,7 +124,7 @@ class DDPGagent:
         """
         next_actions = self.actor_target.forward(next_states)  # π'(s')
         next_cost = self.cost_target.forward(next_states, next_actions.detach())  # c'_wv'(s', a')
-        cost_target = self.VaR(next_states, next_actions) + self.eta * next_cost
+        cost_target = self.VaR(next_states, next_actions).unsqueeze(1) + self.eta * next_cost
         return cost_target
 
     def update(self):
@@ -169,7 +169,7 @@ class DDPGagent:
 
         states = torch.FloatTensor(states).to(device)
         actions = torch.FloatTensor(actions).to(device)
-        rewards = torch.FloatTensor(rewards).to(device)
+        rewards = torch.FloatTensor(rewards).to(device).squeeze(-1)
         next_states = torch.FloatTensor(next_states).to(device)
         dones = torch.FloatTensor(dones).to(device)
 
