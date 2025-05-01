@@ -1,76 +1,64 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-import uvicorn
+from fastapi import FastAPI, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import pandas as pd
+import os
 from src.pipeline.predict_pipeline import run_pipeline
 from src.pipeline.train_pipeline import run_pipeline as train_pipeline
-import os
-import os
-import pandas as pd
+import uvicorn
 
-# File to store capital history
+# Constants
 CAPITAL_FILE = "static/capital_history.csv"
+INITIAL_CAPITAL = 100000
 
-# Load existing capital history if file exists, else initialize
+# Load capital history
 if os.path.exists(CAPITAL_FILE):
     capital_df = pd.read_csv(CAPITAL_FILE)
-    capital_history = capital_df['capital'].tolist()
+    capital_history = capital_df["capital"].tolist()
 else:
-    initial_capital = 100000
-    capital_history = [initial_capital]
+    capital_history = [INITIAL_CAPITAL]
+    pd.DataFrame({"capital": capital_history}).to_csv(CAPITAL_FILE, index=False)
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-from fastapi.staticfiles import StaticFiles
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Allow frontend to access backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Replace with your React dev URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+@app.get("/capital-json")
+def get_capital_data():
+    df = pd.read_csv(CAPITAL_FILE)
+    return df["capital"].tolist()
 
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/reset")
-def reset_capital():
+@app.post("/reset-capital")
+def reset_capital(initial_capital: float = Form(...)):
     global capital_history
-    capital_history = [100000]
-    capital_df = pd.DataFrame({"capital": capital_history})
-    capital_df.to_csv(CAPITAL_FILE, index=False)
-    return {"message": "Capital reset to 100000"}
+    capital_history = [initial_capital]
+    pd.DataFrame({"capital": capital_history}).to_csv(CAPITAL_FILE, index=False)
+    return {"message": "Capital reset", "initial_capital": initial_capital}
 
-# ➡️ Route to train the model
-@app.get("/train", response_class=HTMLResponse)
-def train_pipeline_route(request: Request):
-    # 👇 Call your actual train_pipeline function here
-    train_pipeline()
-
-    return templates.TemplateResponse("train_done.html", {"request": request})
-
-# ➡️ Route to predict and show actions
-@app.get("/predict", response_class=HTMLResponse)
-def predict_pipeline_route(request: Request):
+@app.post("/predict")
+def predict_pipeline_route():
     returns, actions_dict = run_pipeline()
 
     daily_return = returns / 100
     new_capital = capital_history[-1] * (1 + daily_return)
     capital_history.append(new_capital)
 
-    # Save to file
-    capital_df = pd.DataFrame({"capital": capital_history})
-    capital_df.to_csv(CAPITAL_FILE, index=False)
+    pd.DataFrame({"capital": capital_history}).to_csv(CAPITAL_FILE, index=False)
 
-    return templates.TemplateResponse(
-        "predict_done.html",
-        {"request": request, "actions": actions_dict, "returns": returns}
-    )
+    return {
+        "returns": returns,
+        "actions": actions_dict,
+        "new_capital": new_capital
+    }
 
-# ➡️ New route for capital page
-@app.get("/capital", response_class=HTMLResponse)
-def capital_page(request: Request):
-    return templates.TemplateResponse(
-        "capital.html",
-        {"request": request, "capital_history": capital_history}
-    )
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+@app.post("/train")
+def train_pipeline_route():
+    train_pipeline()
+    return {"message": "Training completed"}
