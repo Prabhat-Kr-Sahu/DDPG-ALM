@@ -105,8 +105,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 For feedback, suggestions, or collaboration:
 
-- GitHub: [Prabhat Kumar Sahu](https://github.com/Prabhat-Kr-Sahu)
-- Email: *[add your email here if desired]*
+- GitHub: [Prabhat Kumar Sahu](https://github.com/Prabhat-Kr-Sahu) and [Honey Gupta](https://github.com/honey1205)
+- Email: *[b23281@students.iitmandi.ac.in]
 
 ---
 
