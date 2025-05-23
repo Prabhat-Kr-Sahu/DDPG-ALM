@@ -16,6 +16,7 @@ class DDPGagent:
         """
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # print(device)
         # logging.info(params)
         logging.info(" DDPG AGEnt Class- ++++++++++++++++++++++++++++++++++++++++++")
 
@@ -93,8 +94,8 @@ class DDPGagent:
         states = states.to(device)  # assume actions is already on the correct device
 
         batch_size = states.shape[0]  # ✅ Do NOT use `.to(device)` here
-        num_assets = 30
-
+        num_assets = actions.shape[1]
+        # print(actions.shape, states.shape)
         states = states.squeeze(1).to(device)  # [batch_size, 38, 30]
         states_n = states  # already squeezed
 
@@ -125,6 +126,15 @@ class DDPGagent:
         next_actions = self.actor_target.forward(next_states)  # π'(s')
         next_cost = self.cost_target.forward(next_states, next_actions.detach())  # c'_wv'(s', a')
         cost_target = self.VaR(next_states, next_actions).unsqueeze(1) + self.eta * next_cost
+        # print("cost_target", cost_target.shape)
+        # print("next_cost", next_cost.shape)
+        # print("next_actions", next_actions.shape)
+        # print("next_states", next_states.shape)
+        # print("states", states.shape)
+        # print("actions", actions.shape)
+        # print("dones", dones.shape)
+        # print("self.eta", self.eta)
+        # print("var", self.VaR(next_states, next_actions).shape)
         return cost_target
 
     def update(self):
@@ -170,9 +180,10 @@ class DDPGagent:
         states = torch.FloatTensor(states).to(device)
         actions = torch.FloatTensor(actions).to(device)
         rewards = torch.FloatTensor(rewards).to(device).squeeze(-1)
-        next_states = torch.FloatTensor(next_states).to(device)
+        next_states = torch.FloatTensor(next_states).to(device) 
         dones = torch.FloatTensor(dones).to(device)
-
+        # print("rewards")
+        # print(rewards.shape)
         # 4️⃣ Compute Target Q-Value using Bellman Equation (Eq. 5)
         # Q(s, a) = r + γQ'(s', π'(s'))
         Q_target = rewards + self.gamma  * self.critic_target.forward(next_states, self.actor_target.forward(next_states).detach())
@@ -180,8 +191,10 @@ class DDPGagent:
         # 6️⃣ Compute Critic Loss (Eq. 6)
         # L = 1/N \sum (Q(s, a) - Q_target)^2
         # logging.info(" critic loss calculation -start")
+        # print("critic loss calculation started")
+        # print(self.critic.forward(states, actions).shape, Q_target.shape)
         critic_loss = self.critic_criterion(self.critic.forward(states, actions), Q_target.detach())
-
+        # print("critic loss calculation end")
         # logging.info("critic loss calculation end ")
         # 8️⃣ Compute Cost Network Loss (Eq. 21)
         # L_C = 1/N \sum (c_{w_v}(s, a) - VaR(s, a) - η (1 - d) c'_{w_v'}(s', a'))^2
@@ -189,9 +202,10 @@ class DDPGagent:
         cost_pred = self.cost_network.forward(states, actions)
         cost_target = self.compute_cost_target(states, actions, next_states, dones).detach()
         # logging.info(" cost_ target :: " , cost_target)
-
+        # print("cost loss calculation started")
+        # print(cost_pred.shape, cost_target.shape)
         cost_loss = self.cost_criterion(cost_pred, cost_target)
-
+        # print("cost loss calculation end")
         # logging.info("cost loss calculation end ")
         # 🔟 Compute Actor Loss using Lagrangian method (Eq. 13)
         # L(w_π, λ) = -J_{w_π} + \sum \lambda_j C_{w_π, j} + \frac{\rho}{2} \sum (C_{w_π, j})^2
@@ -219,7 +233,11 @@ class DDPGagent:
         quadratic_penalty = (self.rho / 2) * (constraint_penalty ** 2).mean().clone()
         constraint_penalty=(self.lambda_ * constraint_penalty).mean().clone()
         actor_loss = policy_loss + constraint_penalty + quadratic_penalty
-
+        
+        self.lambda_ = self.lambda_ + self.rho * constraint_penalty.mean().detach()
+        
+        self.rho= self.rho * 1.008
+        
         self.actor_optimizer.zero_grad()
         # logging.info(" actor_ loss ",  actor_loss.shape)
         actor_loss = actor_loss.mean()
