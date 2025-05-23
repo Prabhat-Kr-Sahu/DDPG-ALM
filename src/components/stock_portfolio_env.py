@@ -122,7 +122,7 @@ class StockPortfolioEnv(gym.Env):
 
 
     def step(self, actions):
-      logging.info(f" the len of the df is  {len(self.df.index.unique())}  and the current day is :  {self.day } and  if  terminal is  : { self.day >= len(self.df.index.unique()) - 1 }")
+      # logging.info(f" the len of the df is  {len(self.df.index.unique())}  and the current day is :  {self.day } and  if  terminal is  : { self.day >= len(self.df.index.unique()) - 1 }")
       self.terminal = self.day >= len(self.df.index.unique()) - 1
 
       if self.terminal:
@@ -158,7 +158,8 @@ class StockPortfolioEnv(gym.Env):
           return self.state, self.reward, self.terminal,{}
       else:
           last_day_memory = self.data
-          weights = self.softmax_normalization(actions)  # Ensure valid portfolio weights
+        #   weights = self.softmax_normalization(actions) 
+          weights = self.apply_dirichlet_noise(actions) # Ensure valid portfolio weights
           self.actions_memory.append(weights)
 
           # Load next state
