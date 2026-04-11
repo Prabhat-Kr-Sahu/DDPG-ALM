@@ -6,6 +6,7 @@ import Predict from "../pages/Predict";
 import Capital from "../pages/Capital";
 import ResetCapital from "../pages/ResetCapital";
 import Train from "../pages/Train";
+import Simulation from "../pages/Simulation";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
             <Link to="/predict" className="text-blue-500 hover:underline">Predict</Link>
             <Link to="/train" className="text-blue-500 hover:underline">Train</Link>
             <Link to="/capital" className="text-blue-500 hover:underline">Capital</Link>
+            <Link to="/simulation" className="text-blue-500 hover:underline">Simulation</Link>
             <Link to="/reset" className="text-red-500 hover:underline">Reset</Link>
           </div>
         </nav>
@@ -28,6 +30,7 @@ export default function App() {
             <Route path="/train" element={<Train />} />
             <Route path="/capital" element={<Capital />} />
             <Route path="/reset" element={<ResetCapital />} />
+            <Route path="/simulation" element={<Simulation />} />
           </Routes>
         </main>
       </div>

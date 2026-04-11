@@ -17,7 +17,7 @@ class Tickers:
     sensex_ticker = ["ASIANPAINT.NS", "AXISBANK.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS", "BHARTIARTL.NS", "HCLTECH.NS", "HDFCBANK.NS",
                     "HINDUNILVR.NS", "ICICIBANK.NS", "INDUSINDBK.NS", "INFY.NS", "ITC.NS", "JSWSTEEL.NS", "KOTAKBANK.NS", "LT.NS",
                     "M&M.NS", "MARUTI.NS", "NESTLEIND.NS", "NTPC.NS", "POWERGRID.NS", "RELIANCE.NS", "SBIN.NS", "SUNPHARMA.NS",
-                    "TATAMOTORS.NS", "TATASTEEL.NS", "TCS.NS", "TECHM.NS", "TITAN.NS", "ULTRACEMCO.NS", "WIPRO.NS"]
+                    "EICHERMOT.NS", "TATASTEEL.NS", "TCS.NS", "TECHM.NS", "TITAN.NS", "ULTRACEMCO.NS", "WIPRO.NS"]
 
 
     # BIST Turkey
@@ -104,77 +104,76 @@ class YahooDownloader:
         self.end_date = end_date
         self.ticker_list = ticker_list
 
-    def fetch_data(self, proxy=None, auto_adjust=False) -> pd.DataFrame:
-        """Fetches data from Yahoo API
-        Parameters
-        ----------
+    def fetch_data(self, proxy=None) -> pd.DataFrame:
+        """Fetches data directly from the Yahoo Finance v8 chart API.
 
-        Returns
-        -------
-        `pd.DataFrame`
-            7 columns: A date, open, high, low, close, volume and tick symbol
-            for the specified stock ticker
+        Bypasses yfinance's crumb authentication (broken in 0.2.x) by calling
+        the raw HTTP endpoint, which works without a session cookie.
+        Returns adjusted close prices.
         """
-        # Download and save the data in a pandas DataFrame:
+        import requests
+        from datetime import datetime as dt
+
+        start_ts = int(dt.strptime(self.start_date, "%Y-%m-%d").timestamp())
+        end_ts   = int(dt.strptime(self.end_date,   "%Y-%m-%d").timestamp())
+        headers  = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
         data_df = pd.DataFrame()
         num_failures = 0
-        for tic in self.ticker_list:
-            temp_df = yf.download(
-                tic,
-                start=self.start_date,
-                end=self.end_date,
-                proxy=proxy,
-                auto_adjust=auto_adjust,
-            )
-            if temp_df.columns.nlevels != 1:
-                temp_df.columns = temp_df.columns.droplevel(1)
-            temp_df["tic"] = tic
-            if len(temp_df) > 0:
-                # data_df = data_df.append(temp_df)
-                data_df = pd.concat([data_df, temp_df], axis=0)
-            else:
-                num_failures = num_failures+ 1
-        if num_failures == len(self.ticker_list):
-            raise CustomException(ValueError("no data is fetched."),sys)
-        # reset the index, we want to use numbers as index instead of dates
-        data_df = data_df.reset_index()
-        try:
-            # convert the column names to standardized names
-            data_df.rename(
-                columns={
-                    "Date": "date",
-                    "Adj Close": "adjcp",
-                    "Close": "close",
-                    "High": "high",
-                    "Low": "low",
-                    "Volume": "volume",
-                    "Open": "open",
-                    "tic": "tic",
-                },
-                inplace=True,
-            )
 
-            # use adjusted close price instead of close price
-            data_df["close"] = data_df["adjcp"]
-            # drop the adjusted close price column
-            data_df = data_df.drop(labels="adjcp", axis=1)
-        except Exception as e:
-            raise CustomException(e, sys)
-        # except NotImplementedError:
-        #     print("the features are not supported currently")
-        # create day of the week column (monday = 0)
-        data_df["day"] = data_df["date"].dt.dayofweek
-        # convert date to standard string format, easy to filter
-        data_df["date"] = data_df.date.apply(lambda x: x.strftime("%Y-%m-%d"))
-        # drop missing data
-        data_df = data_df.dropna()
-        data_df = data_df.reset_index(drop=True)
+        for tic in self.ticker_list:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tic}"
+            params = {
+                "period1":  start_ts,
+                "period2":  end_ts,
+                "interval": "1d",
+                "events":   "history",
+            }
+            try:
+                resp   = requests.get(url, params=params, headers=headers, timeout=15, proxies={"https": proxy} if proxy else None)
+                data   = resp.json()
+                result = data["chart"]["result"]
+                if not result or not result[0].get("timestamp"):
+                    logging.warning(f"No data for '{tic}': {data['chart'].get('error')}")
+                    num_failures += 1
+                    continue
+
+                meta       = result[0]["meta"]
+                timestamps = result[0]["timestamp"]
+                indicators = result[0]["indicators"]
+
+                # Use adjclose if available, fall back to close
+                adj = indicators.get("adjclose", [{}])[0].get("adjclose")
+                raw = indicators["quote"][0]
+
+                dates = [dt.fromtimestamp(ts).strftime("%Y-%m-%d") for ts in timestamps]
+                temp_df = pd.DataFrame({
+                    "date":   dates,
+                    "open":   raw.get("open"),
+                    "high":   raw.get("high"),
+                    "low":    raw.get("low"),
+                    "close":  adj if adj else raw.get("close"),
+                    "volume": raw.get("volume"),
+                    "tic":    tic,
+                })
+                data_df = pd.concat([data_df, temp_df], axis=0)
+
+            except Exception as e:
+                logging.warning(f"Failed to get ticker '{tic}': {e}")
+                num_failures += 1
+
+        if num_failures == len(self.ticker_list):
+            raise CustomException(ValueError("no data is fetched."), sys)
+
+        data_df["date"] = pd.to_datetime(data_df["date"])
+        data_df["day"]  = data_df["date"].dt.dayofweek
+        data_df["date"] = data_df["date"].dt.strftime("%Y-%m-%d")
+        data_df = data_df.dropna().reset_index(drop=True)
+
         logging.info("Data downloaded from Yahoo Finance API")
         logging.info("Shape of DataFrame: {}".format(data_df.shape))
-        # print("Display DataFrame: ", data_df.head())
 
         data_df = data_df.sort_values(by=["date", "tic"]).reset_index(drop=True)
-        
         return data_df
 
     def select_equal_rows_stock(self, df):

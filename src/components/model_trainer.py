@@ -202,12 +202,16 @@ class ModelTrainer:
 
             agent.rho= agent.rho * 1.008
 
-            rewards.append(episode_reward)
-            avg_rewards.append(np.mean(rewards[-10:]))
+            rewards.append(float(episode_reward))
+            avg_rewards.append(float(np.mean(rewards[-10:])))
             print(f"Episode: {episode+1}, Total Reward: {episode_reward}")
             print(" violations : " ,  agent.violations)
 
             # save_object(self.modelTrainerConfig.agent_file_path, agent)
             agent.save(self.modelTrainerConfig.agent_file_path)
             self.save_params(best)
+
+            # Persist rewards so they can be plotted after training
+            with open("artifacts/training_rewards.json", "w") as f:
+                json.dump({"rewards": rewards, "avg_rewards": avg_rewards}, f)
 
